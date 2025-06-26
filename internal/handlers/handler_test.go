@@ -75,3 +75,23 @@ func TestRedirect(t *testing.T) {
 		})
 	}
 }
+
+func TestRedirectEvery10thRequest(t *testing.T) {
+	mockConfig := &config.Config{CDNHost: "cdn.mock.com"}
+	handler := NewBalancerHandler(mockConfig)
+
+	videoUrl := "http://origin-cluster/video/123/abc.m3u8"
+	expectedCdnUrl := "http://cdn.mock.com/origin-cluster/video/123/abc.m3u8"
+
+	// Проверяем, что каждый 10-й запрос возвращает оригинальный URL
+	for i := 1; i <= 20; i++ {
+		response, err := handler.Redirect(context.Background(), &pb.RedirectRequest{Video: videoUrl})
+		assert.NoError(t, err)
+
+		if i%10 == 0 {
+			assert.Equal(t, videoUrl, response.RedirectUrl, "Expected original URL on 10th request")
+		} else {
+			assert.Equal(t, expectedCdnUrl, response.RedirectUrl, "Expected CDN URL for non-10th request")
+		}
+	}
+}

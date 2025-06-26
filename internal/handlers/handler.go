@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	pb "BalancerService/proto/service"
@@ -13,6 +14,7 @@ import (
 type BalancerHandler struct {
 	config     *config.Config
 	requestCtr uint64
+	cache      sync.Map
 	pb.UnimplementedBalancerServiceServer
 }
 
@@ -40,9 +42,25 @@ func (b *BalancerHandler) Redirect(ctx context.Context, req *pb.RedirectRequest)
 			RedirectUrl: videoUrl,
 		}, nil
 	}
-	cdnURL := fmt.Sprintf("http://%s/%s/%s", b.config.CDNHost, server, path)
+
+	if cachedURL, ok := b.cache.Load(videoUrl); ok {
+		return &pb.RedirectResponse{
+			RedirectUrl: cachedURL.(string),
+		}, nil
+	}
+
+	var builder strings.Builder
+	builder.WriteString("http://")
+	builder.WriteString(b.config.CDNHost)
+	builder.WriteString("/")
+	builder.WriteString(server)
+	builder.WriteString("/")
+	builder.WriteString(path)
+
+	cdnURL := builder.String()
+
+	b.cache.Store(videoUrl, cdnURL)
 	return &pb.RedirectResponse{
 		RedirectUrl: cdnURL,
 	}, nil
-
 }

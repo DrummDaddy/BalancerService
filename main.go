@@ -8,14 +8,24 @@ import (
 	"BalancerService/internal/handlers"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 
 	pb "BalancerService/proto/service"
 )
 
 func main() {
 	config := config.LoadConfig()
-
-	server := grpc.NewServer()
+	grpcOptions := []grpc.ServerOption{
+		grpc.MaxConcurrentStreams(10000),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionIdle: 5 * 60,
+		}),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             2 * 60,
+			PermitWithoutStream: true,
+		}),
+	}
+	server := grpc.NewServer(grpcOptions...)
 	handler := handlers.NewBalancerHandler(config)
 	pb.RegisterBalancerServiceServer(server, handler)
 
