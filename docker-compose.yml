@@ -1,0 +1,9 @@
+
+services:
+  balancer-service:
+    build: .
+    ports:
+      - "443:443"
+    environment:
+      - CDN_HOST=cdn.example.com 
+    restart: always

@@ -1,0 +1,18 @@
+syntax = "proto3"; 
+
+package service; 
+
+option go_package = "proto/service";
+
+service BalancerService {
+    rpc Redirect(RedirectRequest) returns (RedirectResponse);
+
+} 
+
+message RedirectRequest {
+    string video = 1; 
+} 
+
+message RedirectResponse {
+    string redirect_url = 1;
+} 
